@@ -7,7 +7,7 @@ use Carp;
 use vars qw(@ISA $VERSION);
 @ISA = qw(Boulder::Stream);
 
-$VERSION = 1.06;
+$VERSION = 1.07;
 
 # Hard-coded defaults - must modify for your site
 use constant YANK            =>  '/usr/local/bin/yank';
@@ -823,7 +823,7 @@ sub parse {
     $key = $keyword if $keyword;
   }
   
-  my($sequence) = $record=~/\nORIGIN\n(.+)\\?\\?/s;
+  my($sequence) = $record=~/\nORIGIN\s*\n(.+)\\?\\?/s;
 #  $sequence=~s/[\s0-9-]+//g;  # remove white space and numbers
 #  $sequence =~ s/^\s*\d+\s//mg;  # remove leading numbers and whitespace
 #  $sequence =~ s/(\S{1,10}) /$1/g; # remove spacer

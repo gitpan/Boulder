@@ -1,3 +1,8 @@
+2001-06-14  Lincoln Stein  <lstein@cshl.org>
+	* (version 1.24)
+	* Fixed bugs introduced into 1.23 version when parsing
+		Boulder::Genbank records from Entrez
+
 2001-06-13  Lincoln Stein  <lstein@cshl.org>
 	* (version 1.23)
 	* Boulder::Genbank now correctly handles sequences that
