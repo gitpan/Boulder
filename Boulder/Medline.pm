@@ -6,7 +6,7 @@ require Exporter;
 @EXPORT = ();
 @EXPORT_OK = ();
 use Carp;
-$VERSION=08061999;
+$VERSION=1.01;
 use constant DEFAULT_MEDLINE_PATH => '/data/medline/medline.txt';
 
 =head1 NAME

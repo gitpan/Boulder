@@ -201,7 +201,7 @@ You can mix query types in the parameter provided to B<query()>.
 For example, here's how to look up all stones in which the sex is
 male and the age is greater than 30:
 
-	$db->query('sex'=>'M',eval=>'<age> > 30');
+	$db->query('sex'=>'M',EVAL=>'<age> > 30');
 
 When a query is in effect, B<read_record()> returns only Stones
 that satisfy the query.  In an array context, B<read_record()> 

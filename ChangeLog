@@ -1,3 +1,9 @@
+2000-06-08  Lincoln Stein  <lstein@cshl.org>
+
+	* Fixed Boulder::Blast::NCBI parsing error that caused it to miss some HSPs
+	* Fixed Boulder::Blast::{NCBI,WU} treatment of % identity -- had been returning
+	  identity as a fraction of 1 rather than a percentage (as documented)
+
 1999-12-02  Lincoln Stein  <lstein@cshl.org>
 
 	* Fixed parameter bug in File accessor for Boulder::Genbank.

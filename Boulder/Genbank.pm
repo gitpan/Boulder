@@ -7,7 +7,7 @@ use Carp;
 use vars qw(@ISA $VERSION);
 @ISA = qw(Boulder::Stream);
 
-$VERSION = 1.01;
+$VERSION = 1.03;
 
 # Hard-coded defaults - must modify for your site
 use constant YANK            =>  '/usr/local/bin/yank';
@@ -370,6 +370,11 @@ Stone with keys "a", "c", "t" and "g".  Example:
      my $T = $s->Basecount->T;
      print "GC content is ",($G+$C)/($A+$C+$G+$T),"\n";
 
+=item Blob
+
+The entire flatfile record as an unparsed chunk of text (a "blob").
+This is a handy way of reassembling the record for human inspection.
+
 =item Comment
 
 The COMMENT line from the Genbank record.
@@ -524,7 +529,7 @@ L<Boulder>, L<Boulder::Blast>
 
 Lincoln Stein <lstein@cshl.org>.
 
-Copyright (c) 1997 Lincoln D. Stein
+Copyright (c) 1997-2000 Lincoln D. Stein
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.  See DISCLAIMER.txt for
@@ -758,7 +763,17 @@ sub parse {
       }
       next;
     }
-      
+
+    # special case for the VERSION
+    if ($line=~/^VERSION/) {
+      my @vernid = split(/\s+/,$line);
+      my ($junk,$tmp)=split(/:/,$vernid[2]);
+      $vernid[2]='g'.$tmp;
+      $self->_addToStone('Version',$vernid[1],$s,\%ok);
+      $self->_addToStone('Nid',$vernid[2],$s,\%ok);
+      next;
+    }
+ 
     # special case for the features table
     if ($line=~/^FEATURES/..$line=~/^ORIGIN/) {
       undef $keyword;
@@ -768,19 +783,22 @@ sub parse {
 	next;
       }
 
-      if ($line=~/BASE COUNT|ORIGIN/) {
+      if ($line =~ /^(BASE COUNT|ORIGIN)/) {
 	push(@features,$feature) if $feature;
 	$self->_addFeaturesToStone(\@features,_trim($'),$s,\%ok) if @features;
-	undef @features; undef $feature;
-	next if $line =~ /BASE COUNT/;
+	undef @features; 
+	undef $feature;
+	next if $line =~ /^BASE COUNT/;
 
 	# special case for the sequence itself
 	if ($line=~/^ORIGIN/) {
+	  # next line added by Luca Toldo
+	  $self->_addToStone('Blob',$record,$s,\%ok);
 	  $self->_addToStone($key,$accumulated,$s,\%ok) if $key;
 	  last;
 	}
       }
-    
+
       my($featurelabel) = _trim(substr($line,$FEATURECOL,$FEATUREVALCOL-$FEATURECOL));
       my($featurevalue) = _trim(substr($line,$FEATUREVALCOL));
       if ($featurelabel) {
@@ -789,7 +807,6 @@ sub parse {
       } else {
 	$feature->{'value'} .= $featurevalue;
       }
-      
       next;
     }
     
@@ -806,7 +823,7 @@ sub parse {
     $key = $keyword if $keyword;
   }
   
-  my ($sequence)=$record=~/\nORIGIN.*\n([\s\S]+)/;
+  my($sequence) = $record=~/\nORIGIN\s+(.+)\\?\\?/s;
   $sequence=~s/[\s0-9-]+//g;  # remove white space
   $self->_addToStone('Sequence',$sequence,$s,\%ok);
   return $s;

@@ -143,7 +143,7 @@ sub parse_hits {
 
     $done    = /^\s+Database/; # here's how we get out of the loop
     $new_hit = /^>(\S+)/;
-    $new_hsp = $accession && /Score = ([\d.]+) bits \((\S+)\)/;
+    $new_hsp = $accession && /Score\s+=\s+([\d.]+)\s+bits\s+\((\S+)\)/;
 
     # hit a new HSP section
     if ( $done || $new_hit || $new_hsp ) {
@@ -219,8 +219,8 @@ sub parse_hits {
       $signif = $1 < $signif ? $1 : $signif;
     }
     
-    if (/Identities = \S+ \((\d+)%?\)/) {
-      my $idn = $1 * 0.01;
+    if (/Identities = \S+ \((\d+%?)\)/) {
+      my $idn = $1;
       $hsp->insert(Identity => $idn);
       $ident = $idn > $ident ? $idn : $ident;
     }

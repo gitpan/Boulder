@@ -168,6 +168,10 @@ FASTA format.  This will be the first set of non-whitespace
 characters following the ">" character.  In other words, the search
 sequence "name".
 
+=item Blast_query_length
+
+The length of the query sequence, in base pairs.
+
 =item Blast_db
 
 The Unix filesystem path to the subject database.
