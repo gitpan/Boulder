@@ -1,3 +1,8 @@
+2001-06-13  Lincoln Stein  <lstein@cshl.org>
+	* (version 1.23)
+	* Boulder::Genbank now correctly handles sequences that
+	 	use whitespace to represent gaps
+
 2001-06-11  Lincoln Stein  <lstein@cshl.org>
 	* (version 1.22)
 	* now reports BatchEntry errors to standard error
