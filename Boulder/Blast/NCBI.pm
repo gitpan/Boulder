@@ -32,6 +32,7 @@ disclaimers of warranty.
 =cut
 
 use strict;
+use File::Basename;
 use Stone;
 use Boulder::Stream;
 use Carp;
@@ -52,10 +53,13 @@ sub _read_record {
   my $line;
   do { 
     $line = <$fh>;
-  } until $line=~/^Query=\s+(\S+)/;
+  } until ($line && $line=~/^Query=/);
   
-  croak "Couldn't find query line!" unless $1;
-  $stone->insert(Blast_query => $1);
+  if ($line && $line =~ /^Query=\s+(\S+)/) {
+    $stone->insert(Blast_query => $1);
+  } else {
+    croak "Couldn't find query line!";
+  }
 
   do { 
     $line = <$fh>;
@@ -81,7 +85,12 @@ sub _read_record {
 
   # Now we should be pointing at statistics
   while (<$fh>) {
-    $stone->insert(Blast_db       => $1) if /Database: (.*)/;
+    if (/Database: (.*)/) {
+      my $db = $1;
+      $stone->insert(Blast_db => $db);
+      $stone->insert(Blast_db_title => basename($db));
+    }
+    # in case match title, overwrite previous setting of Blast_db_title
     $stone->insert(Blast_db_title => $1) if /Title: (.*)/;
     $stone->insert(Blast_db_date  => $1) if /Posted date:\s+(.*)/;
     last if /Lambda/;
@@ -219,9 +228,9 @@ sub parse_hits {
       $signif = $1 < $signif ? $1 : $signif;
     }
     
-    if (/Identities = \S+ \((\d+%?)\)/) {
+    if (/Identities = \S+ \((\d+)%?\)/) {
       my $idn = $1;
-      $hsp->insert(Identity => $idn);
+      $hsp->insert(Identity => "$idn%");
       $ident = $idn > $ident ? $idn : $ident;
     }
 

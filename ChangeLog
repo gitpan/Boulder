@@ -1,3 +1,10 @@
+Mon Feb  4 17:52:03 EST 2002
+	* (Version 1.27)
+	* Batch entrez queries work again using semi-published, semi-private interface
+	  The problem with the published interface is there's no way to pass a list of
+	  Genbank ACCESSION numbers, just GI numbers.  So I have to use the XML demo.
+	* Patches from Michael Peterson to fix BLAST parsing.
+	
 Thu Jan 24 14:21:02 EST 2002
 	* (Version 1.26)
 	* Partial fix for Entrez retrieval, but Entrez queries don't work :-(

@@ -12,10 +12,9 @@ $VERSION = 1.09;
 # Hard-coded defaults - must modify for your site
 use constant YANK            =>  '/usr/local/bin/yank';
 
-# used by Entrez accessor, may need to change in the future
-use constant HOST      => 'www.ncbi.nlm.nih.gov';
 #use constant BATCH_URI => '/cgi-bin/Entrez/qserver.cgi/result';
 #use constant BATCH_URI => '/htbin-post/Entrez/query';
+use constant HOST      => 'www.ncbi.nlm.nih.gov';
 use constant BATCH_URI => '/IEB/ToolBox/XML/xbatch.cgi';
 
 # Genbank entry parsing constants
@@ -90,8 +89,8 @@ stream-like interface to a series of Stone objects.
 >> IMPORTANT NOTE <<
 
 As of January 2002, NCBI has changed their Batch Entrez interface.  I
-have modified Boulder::Genbank so as to use a "demo" interface, but
-although fetch by accession now works, fetch by Entrez query doesn't.
+have modified Boulder::Genbank so as to use a "demo" interface, which
+fixes things, but this isn't guaranteed in the long run.
 
 I have written to NCBI, and they may fix this -- or they may not.
 
@@ -263,8 +262,7 @@ selected from the following list:
   m  MEDLINE
   p  Protein
   n  Nucleotide
-  t  3-D structure
-  c  Genome
+  s  Popset
 
 =item B<-proxy>
 
@@ -1021,6 +1019,13 @@ package Entrez;
 use Carp;
 use vars '@ISA';
 use IO::Socket;
+use CGI 'escape';
+
+# used by Entrez accessor, may need to change in the future
+use constant  ENTREZ_HOST => 'www.ncbi.nlm.nih.gov';
+use constant  QUERY_URI   => '/entrez/utils/pmqty.fcgi';
+use constant  BATCH_URI   => '/entrez/utils/pmfetch.fcgi';
+use constant  XBATCH_URI => '/IEB/ToolBox/XML/xbatch.cgi';
 
 use constant PROTO => 'HTTP/1.0';
 use constant CRLF  => "\r\n";
@@ -1032,19 +1037,24 @@ sub new {
     my($package,$param) = @_;
     croak "Entrez::new(): usage [list of accession numbers] or {args => values}" 
       unless $param;
-    my $self = {};
+    my $self = bless {},ref($package) || $package;
 
     $self->{query}     = $param->{-query};
     $self->{accession} = $param->{-fetch} || $param->{-param};
     $self->{db}        = $param->{-db} || 'n';
     $self->{format}    = $param->{-format} || 'stone';
     $self->{proxy}     = $param->{-proxy};
+    $self->{limit}     = $param->{-limit};
 
-    croak "Must provide a 'query' or 'accession' argument" unless $self->{query} || $self->{accession} ;
-    $self->{accession} = [$self->{accession}] if $self->{accession} and !ref($self->{accession});
-    $self->{accession} = [ @{$self->{accession}} ]
-      if $self->{accession} and ref $self->{accession}; # copy array to avoid munging caller's variable
-    return bless $self,$package;
+    if ($self->{query}) {
+      $self->{accession} = $self->get_accessions($self->{query});
+    } elsif ($self->{accession}) {
+      my @accessions = ref $self->{accession} ? @{$self->{accession}} : ($self->{accession});
+      $self->{accession} = \@accessions;
+    } else {
+      croak "Must provide a 'query' or 'accession' argument" unless $self->{query} || $self->{accession} ;
+    }
+    $self;
 }
 
 sub fetch_next {
@@ -1077,7 +1087,7 @@ sub fetch_next {
     die "Must provide either a list of accession numbers or an Entrez query"
       unless $self->{accession} || $self->{query};
 
-    return unless $self->_request;
+    return unless $self->get_entries;
 
     my $data = $self->_getline;
     $self->_cleanup(\$data);
@@ -1093,19 +1103,60 @@ sub _cleanup {
   substr($$d,0,0)='>' unless $$d =~/^>/;
 }
 
-sub _request {
+sub get_accessions {
   my $self = shift;
-  my $format = $self->{format};
-  my ($path,$hostent,$peer,$peerport);
+  my $query = shift;
+  my $sock    = $self->_build_connection(ENTREZ_HOST) or return;
+
+  # bug here: assume that the server will give us everything when we ask for 1 billion entries
+  my $request = $self->_build_post(ENTREZ_HOST,
+				   QUERY_URI,
+				   undef,
+				   sprintf("db=%s&dispmax=%d&report=gen&mode=text&tool=boulder&term=%s",$self->db,$self->limit, escape($query)));
+
+  print $sock $request;
+  my $status = $self->_read_header($sock);
+  return unless $status == 200;
+
+  local $/ = ' ';
+  my $line = $sock->getline;
+  chomp $line;
+  warn "*** ENTREZ: $line ***" unless $line =~ /^\d+$/;
+  my @accessions = $line;
+  while (defined ($line = $sock->getline)) {
+    chomp $line;
+    push @accessions,$line;
+  }
+  return \@accessions;
+}
+
+sub db {
+  my $self = shift;
+  my $db = $self->{db} || 'n';
+  my $translated = { m => 'medline',
+		     p => 'protein',
+		     n => 'nucleotide',
+		     s => 'popset' }->{$db};
+  $translated || $db;
+}
+
+# BUG: one billion = infinity
+sub limit {
+  shift->{limit} || 1_000_000_000;
+}
+
+sub _build_connection {
+  my $self = shift;
+  my $host = shift;
+  my ($hostent,$peer,$peerport);
 
   if (my $proxy = $self->{proxy}) {
-    ($hostent) = $proxy =~ m!^http://([^/]+)/?! or return;
-    $path = 'http://'.Boulder::Genbank::HOST.Boulder::Genbank::BATCH_URI;
+    $proxy =~ m!^http://([^/]+)/?! or return;
+    $hostent = $1;
   } else {
-    $hostent = Boulder::Genbank::HOST;
-    $path = Boulder::Genbank::BATCH_URI;
+    $hostent = $host;
   }
-
+  
   ($peer,$peerport) = split(':',$hostent);
   $peerport ||= 'http(80)';
 
@@ -1114,7 +1165,42 @@ sub _request {
 				   PeerPort => $peerport,
 				   Proto    => 'tcp'
 				  );
-  return unless $sock;
+
+  $sock;
+}
+
+sub _build_post {
+  my $self = shift;
+  my ($host,$uri,$type,$param) = @_;
+
+  my $path = $self->{proxy} ? "http://$host$uri" : $uri;
+  $type ||= 'application/x-www-form-urlencoded';
+  my $length = length($param);
+  my $request = join (CRLF,
+		      "POST $path ".PROTO,
+		      "User-agent: Mozilla/5.0 [en] (PalmOS)",
+		      "Content-Type: $type",
+		      "Content-Length: $length",
+		      CRLF
+		      );
+  $request.$param;
+}
+
+sub _read_header {
+  my $self = shift;
+  my $sock = shift;
+  local $/ = CRLF.CRLF;
+  my $header = $sock->getline;
+  return 500 unless $header;
+  return 500 unless $header =~ /^HTTP\/[\d.]+ (\d+)/;
+  $1;
+}
+
+sub get_entries {
+  my $self = shift;
+  my $format = $self->{format};
+
+  my $sock = $self->_build_connection(ENTREZ_HOST) or return;
 
   # create the multipart form...
   my $db = $self->{'db'};
@@ -1142,12 +1228,12 @@ sub _request {
 
   my $content = "$boundary\r\n" . join("$boundary\r\n",@records) . "$boundary--\r\n";
 
-  print $sock "POST $path ",PROTO,CRLF;
-  print $sock "User-agent: Mozilla/5.0 [en] (PalmOS)",CRLF;
-  print $sock "Content-Type: multipart/form-data; boundary=$boundary",CRLF;
-  print $sock "Content-Length: ",length $content,CRLF,CRLF;
+  my $request = $self->_build_post(ENTREZ_HOST,
+				   XBATCH_URI,
+				   "multipart/form-data; boundar=$boundary",
+				   $content);
 
-  print $sock $content;
+  print $sock $request;
 
   local($/) = CRLF . CRLF;
 
@@ -1168,7 +1254,7 @@ sub _request {
     }
     delete $self->{query};
     $self->{accession} = \@accessions;
-    return $self->_request; # horrible recursion here!
+    return $self->get_entries; # horrible recursion here!
   } else {
     while ($line =~ /(WARNING|ERROR): (.+)/) {
       warn "**** GENBANK $1: $2\n";
