@@ -5,9 +5,10 @@ use Boulder::Stream;
 use Boulder::Genbank;
 use Getopt::Long;
 use Text::Abbrev;
-my ($ACCESSOR,$DELAY,$FIRST);
+my ($ACCESSOR,$DELAY,$FIRST,$FLAT);
 
 GetOptions('accessor=s' => \$ACCESSOR,
+	   'flat'        =>\$FLAT,
 	   'delay=i'     => \$DELAY) || die <<USAGE;
 Usage: $0 [options] [accession] [accession] ...
 
@@ -22,6 +23,7 @@ number.
 Options:
   -accessor <Entrez|Yank>  Use the Entrez|Yank methods
                             for retrieving records.
+  -flag                    Return flatfile record
   -delay    <seconds>      Seconds to sleep between retrievals (10)
 
 Options may be abbreviated, i.e. -acc E
@@ -62,6 +64,10 @@ while (1) {
   last if $count++ > @accession_numbers;
   next unless my $s = $gb->get;
   sleep $DELAY if $FIRST++ && $DELAY > 0;
-  $stream->put($s);
+  if ($FLAT) {
+    print $s->Blob,"||\n";
+  } else {
+    $stream->put($s);
+  }
 }
 

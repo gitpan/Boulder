@@ -8,7 +8,7 @@ use vars qw($VERSION $AUTOLOAD $Fetchlast);
 use overload  '""' => 'toString',
 	      'fallback' =>' TRUE';
 
-$VERSION = '1.19';
+$VERSION = '1.20';
 require 5.004;
 
 =head1 NAME
@@ -780,11 +780,12 @@ sub _index {
     }
     
     foreach (@value) {
-	if (@indices) {
-	    push @results,&_index($_,@indices) if $_->isa('Stone') && !exists($_->{'.name'});
-	} else{
-	    push @results,$_;
-	}
+      next unless ref $_;
+      if (@indices) {
+	push @results,&_index($_,@indices) if $_->isa('Stone') && !exists($_->{'.name'});
+      } else{
+	push @results,$_;
+      }
     }
     return wantarray ? @results : $results[0];
 }

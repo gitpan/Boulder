@@ -346,7 +346,7 @@ sub read_one_record {
     my $delim=$self->{'delim'};
     my $subrec_start=$self->{'subrec_start'};
     my $subrec_end=$self->{'subrec_end'};
-    my ($stone,$pebble,$found);
+    my ($pebble,$found);
 
     # This is a small hack to ensure that we respect the
     # record delimiters even when we don't make an 
@@ -360,6 +360,8 @@ sub read_one_record {
 
     undef $self->{WRITE};
     undef $self->{PASSED};
+
+    my $stone = new Stone();
 
     while (1) {
 
@@ -383,15 +385,13 @@ sub read_one_record {
 
 	next unless ($key,$value) = /^\s*(.+?)\s*$delim\s*(.*)/o;
 
-	$stone = new Stone() unless $stone;
-
 	if ((!@keywords) || $interested{$key}) {
 
 	    $found++;
 	    if ($value=~/^\s*$subrec_start/o) {
 		$self->{LEVEL}++;
 		$pebble = read_one_record($self); # call ourselves recursively
-		$pebble = new Stone() unless $pebble; # an empty record is still valid
+		$pebble = new Stone() unless defined($pebble); # an empty record is still valid
 		$stone->insert($self->unescapekey($key)=>$pebble);
 		next;
 	    }

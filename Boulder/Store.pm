@@ -1,4 +1,4 @@
-# $Id: Store.pm,v 1.3 2000/10/20 00:09:56 lstein Exp $
+# $Id: Store.pm,v 1.4 2000/12/01 21:39:57 lstein Exp $
 
 # Prototype support library for storing Boulder streams.
 # Basic design is as follows:
@@ -513,14 +513,14 @@ sub read_one_record {
 sub read_record {
     my($self,@tags) = @_;
     my $query = $self->{'query_test'};
-    local($s);
+    my $s;
 
     if (wantarray) {
 	my(@result);
 	while (!$self->done) {
 	    $s = $self->read_one_record(@tags);
 	    next unless $s;
-	    next if $query && !(&$query);
+	    next if $query && !($query->($s));
 	    push(@result,$s);
 	}
 	return @result;
@@ -529,7 +529,7 @@ sub read_record {
 	    $s = $self->read_one_record(@tags);
 	    next unless $s;
 	    return $s unless $query;
-	    return $s if &$query;
+	    return $s if $query->($s);
 	}
 	return undef;
     }
@@ -642,7 +642,7 @@ sub query {
 	}
 
     }
-    $perlcode = 'sub {' . join(' && ',@expressions) . ';}' if @expressions;
+    $perlcode = 'sub { my $s = shift;' . join(' && ',@expressions) . ';}' if @expressions;
     $perlcode = 'sub {1;}' unless @expressions;
     
     # The next step either looks up a compiled query or
