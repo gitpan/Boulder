@@ -29,8 +29,8 @@ Boulder::Stream - Read and write tag/value data from an input stream
    # Age >= 35 and Friends list includes "Fred"
    use Boulder::Stream;
    
+   # filestream way:
    my $stream = Boulder::Stream->newFh;
-   
    while ( my $record = <$stream> ) {
       next unless $record->Age >= 35;
       my @friends = $record->Friends;
@@ -39,6 +39,19 @@ Boulder::Stream - Read and write tag/value data from an input stream
       $record->insert(Eligible => 'yes');
       print $stream $record;
     }
+
+    # object oriented way:
+   my $stream = Boulder::Stream->new;
+   while (my $record = $stream->get ) {
+      next unless $record->Age >= 35;
+      my @friends = $record->Friends;
+      next unless grep {$_ eq 'Fred'} @friends;
+
+      $record->insert(Eligible => 'yes');
+      print $stream $record;
+    }
+
+
 
 =head1 DESCRIPTION
 
@@ -292,6 +305,7 @@ $VERSION=1.07;
 
 # Pseudonyms and deprecated methods.
 *get        =  \&read_record;
+*next       =  \&read_record;
 *put        =  \&write_record;
 
 # Call this with IN and OUT filehandles of your choice.

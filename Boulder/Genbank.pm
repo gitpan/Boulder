@@ -7,7 +7,7 @@ use Carp;
 use vars qw(@ISA $VERSION);
 @ISA = qw(Boulder::Stream);
 
-$VERSION = 1.03;
+$VERSION = 1.05;
 
 # Hard-coded defaults - must modify for your site
 use constant YANK            =>  '/usr/local/bin/yank';
@@ -878,10 +878,11 @@ sub _addFeaturesToStone {
 	# now add the features
 	my($f) = new Stone;
 	foreach (@$features) {
+	    my($p) = new Stone;	      
 	    my($q) = $_->{'value'};
 	    my($label) = _canonicalize($_->{'label'});
 	    my($position) = $q=~m!^([^/\s]+)!;
-	    my @qualifiers = $q=~m@/(\w+)=(.+?)(?=\"|/\w+=)@g;  # slower but ?better
+	    my @qualifiers = $q=~m@/(\w+)=(.+?)(?=\"|/\w+=|$)@g;  # slower but ?better
 	    my %qualifiers;
 	    while (my($key,$value) = splice(@qualifiers,0,2)) {
 	      $value =~ s/^\s*\"//; # trim off extra space and quotes
@@ -889,9 +890,11 @@ sub _addFeaturesToStone {
 	      $value =~ s/^\s+//; # trim off extra space and quotes
 	      $value =~ s/\s+$//;
 	      $value =~ s/\s+//g if uc($key) eq 'TRANSLATION';  # get rid of spaces in protein translation
-	      $qualifiers{_canonicalize($key)} = $value;
-	    }
-	    $f->insert($label=>new Stone('Position'=>$position,%qualifiers));
+	      $p->insert(_canonicalize($key)=>$value);	      
+	    }						
+	    $p->insert('Position'=>$position);
+	    $f->insert($label=>$p);
+	    undef $p;	       
 	}
 	$stone->insert('Features',$f);
     }
@@ -927,14 +930,14 @@ sub new {
     my($package,$param) = @_;
     croak "Yank::new(): need at least one Genbank acccession number" unless $param;
     croak "Yank::new(): yank executable not found" unless -x $YANK;
-    $param->{fetch} ||= $param->{param};  # for backward compatibility
-    $param->{fetch} || croak "Provide list of accession numbers to yank";
-    my @accession = @{$param->{fetch}};
+    $param->{-fetch} ||= $param->{-param};  # for backward compatibility
+    $param->{-fetch} || croak "Provide list of accession numbers to yank";
+    my @accession = @{$param->{-fetch}};
     my $tmpfile = "/usr/tmp/yank$$";
     open (TMP,">$tmpfile") || croak "Yank::new(): couldn't open tmpfile $tmpfile for write: $!";
     print TMP join("\n",@accession),"\n";
     close TMP;
-    open(YANK,"$YANK < $tmpfile |") || croak "Yank::new(): couldn't open pipe from yank: $!";
+    open(YANK,"$YANK -b < $tmpfile |") || croak "Yank::new(): couldn't open pipe from yank: $!";
     return bless {'tmpfile'=>$tmpfile,'fh'=>\*YANK},$package;
 }
 
@@ -1036,6 +1039,8 @@ sub fetch_next {
       if (my $data = $self->_getline) {
 	$self->_cleanup(\$data);
 	return $data;
+      } else {
+	return;
       }
     }
 
@@ -1120,6 +1125,11 @@ sub _request {
     delete $self->{query};
     $self->{accession} = \@accessions;
     return $self->_request; # horrible recursion here!
+  } else {
+    while ($line =~ /(WARNING|ERROR): (.+)/) {
+      warn "**** GENBANK $1: $2\n";
+      $line = $sock->getline;
+    }
   }
   $self->{bufferedline} = $line;
   if ($format eq 'fasta') {

@@ -1,10 +1,16 @@
+2001-06-11  Lincoln Stein  <lstein@cshl.org>
+	* (version 1.22)
+	* now reports BatchEntry errors to standard error
+	* patch from Will Fitzhugh to correct problems with Yank accessor
 
+2001-03-09 Lincoln Stein  <lstein@cshl.org>
+	* (version 1.21)
+	* fixed loop termination problem in Boulder::Genbank
+	
 2000-07-13  Lincoln Stein  <lstein@formaggio.cshl.org>
-
-	* (version 1.19)
-	* Fixed to_hash using patch from Alex Rolfe
-	* Fixed misdocumentation of Boulder::Store->put()
-		no longer requires record number
+	* (version 1.20)
+	* Fixes to Boulder::Genbank provided by Lester Hui.
+	  Now  handles repeated multivalued features better.
 
 2000-06-08  Lincoln Stein  <lstein@cshl.org>
 

@@ -1,4 +1,4 @@
-# $Id: Store.pm,v 1.4 2000/12/01 21:39:57 lstein Exp $
+# $Id: Store.pm,v 1.5 2001/06/11 17:11:08 lstein Exp $
 
 # Prototype support library for storing Boulder streams.
 # Basic design is as follows:
@@ -261,7 +261,7 @@ use Carp;
 use Fcntl;
 use DB_File;
 
-$VERSION = '1.19';
+$VERSION = '1.20';
 
 @ISA = 'Boulder::Stream';
 $lockfh='lock00000';
@@ -416,7 +416,7 @@ sub write_record {
 	@value = $stone->get($key);
 	$key = $self->escapekey($key);
 	foreach $value (@value) {
-	    if (ref $value && $value->{'.name'}) {
+	    if (ref $value && defined $value->{'.name'}) {
 		$value = $self->escapeval($value);
 		push(@lines,"$key$self->{delim}$value");
 	    } else {
@@ -684,7 +684,7 @@ sub _write_nested {
 	@value = $stone->get($key);
 	$key = $self->escapekey($key);
 	foreach $value (@value) {
-	    if (ref $value && $value->{'.name'}) {
+	    if (ref $value && defined $value->{'.name'}) {
 		$value = $self->escapeval($value);
 		push(@lines,"$key$self->{delim}$value");
 	    } else {
