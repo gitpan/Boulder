@@ -29,7 +29,10 @@ USAGE
 ;
 
 $ACCESSOR ||= 'Entrez';
-$DELAY = 10 unless defined $DELAY;
+unless (defined $DELAY) {
+  warn "Warning: No -delay parameter. Introducing a 1 second delay between fetches\n";
+  $DELAY = 1;
+}
 my @accession_numbers;
 my $from_stdin = !@ARGV;
 my $abbrev = abbrev qw(Entrez Yank entrez yank);

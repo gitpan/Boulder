@@ -717,7 +717,7 @@ sub read_record {
 
     if (wantarray) {
 	my(@result);
-	while (!$self->{'done'}) {
+	while (!$self->{EOF}) {
 	    $s = $self->read_one_record(@tags);
 	    next unless $s;
 	    next if $query && !(&$query);
@@ -727,7 +727,7 @@ sub read_record {
     } 
 
     # we get here if in a scalar context
-    while (!$self->{'done'}) {
+    while (!$self->{EOF}) {
 	$s = $self->read_one_record(@tags);
 	next unless $s;
 	return $s unless $query;
@@ -819,7 +819,7 @@ sub read_one_record {
   my $accessor = $self->{'accessor'};
   my $record   = $accessor->fetch_next();
   unless ($record) {
-    $self->{'done'}++;
+    $self->{EOF}++;
     return undef;
   }
 
@@ -946,7 +946,7 @@ use Carp;
 
 sub new {
     my($package,$param) = @_;
-    my $path = $param->{fetch} || $param->{path};
+    my $path = $param->{-fetch} || $param->{-path} || $param->{-param};
     my $fh;
     if (!$path) {
       $fh = \*ARGV;
@@ -963,8 +963,8 @@ sub fetch_next {
     my $self = shift;
     return undef unless $self->{'fh'};
     local($/)="//\n";
-    my($line);
-    my($fh) = $self->{'fh'};
+    my $line;
+    my $fh = $self->{'fh'};
     chomp($line = <$fh>);
     return $line;
 }
@@ -992,6 +992,8 @@ sub new {
     $self->{format}    = $param->{-format} || 'stone';
 
     croak "Must provide a 'query' or 'accession' argument" unless $self->{query} || $self->{accession} ;
+    $self->{accession} = [ @{$self->{accession}} ]
+      if $self->{accession} and ref $self->{accession}; # copy array to avoid munging caller's variable
     return bless $self,$package;
 }
 

@@ -232,6 +232,16 @@ from scratch.
 
 =back
 
+=head1 CAVEATS
+
+Boulder::Store makes heavy use of the flock() call in order to avoid
+corruption of DB_File databases when multiple processes try to write
+simultaneously.  flock() may not work correctly across NFS mounts,
+particularly on Linux machines that are not running the rpc.lockd
+daemon.  Please confirm that your flock() works across NFS before
+attempting to use Boulder::Store.  If the store.t test hangs during
+testing, this is the likely culprit.
+
 =head1 AUTHOR
 
 Lincoln D. Stein <lstein@cshl.org>, Cold Spring Harbor Laboratory,

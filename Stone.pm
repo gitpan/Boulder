@@ -3,6 +3,13 @@
 # multi-valued hash array type of structure.
 
 package Stone;
+use strict;
+use vars qw($VERSION $AUTOLOAD $Fetchlast);
+use overload  '""' => 'toString',
+	      'fallback' =>' TRUE';
+
+$VERSION = '1.15';
+require 5.004;
 
 =head1 NAME
 
@@ -564,65 +571,6 @@ itself.
 
 =head1 SEE ALSO
 
-L<Boulder::Blast>, L<Boulder::Genbank>, L<Boulder::Medline>, L<Boulder::Unigene>,
-L<Boulder::Omim>, L<Boulder::SwissProt>
-
-=cut
-
-use strict;
-use vars qw($VERSION $AUTOLOAD $Fetchlast);
-use overload  '""' => 'toString',
-	      'fallback' =>' TRUE';
-
-$VERSION = '1.14';
-require 5.004;
-
-=head1 NAME
-
-Stone - A data object that holds nested tag/value pairs
-
-=head1 SYNOPSIS
-
-   #!/usr/local/bin/perl
-   # This is an example of pulling out a series of
-   # sequence records, picking primer pairs, and
-   # inserting the new STS into the stream.
-   
-   use Boulder::Stream;
-   
-   $stream = Boulder::Stream->newFh;
-
-   while ($stone = <$stream>) {
-   
-      $primers = pick_primers($stone->SEQUENCE);
-      if ($primers) {
-         $stone->insert(PRIMER_OUTCOME=>1,STS=>$primers);
-      } else {
-         $stone->insert(PRIMER_OUTCOME=>0);
-      }
-   
-   } continue {
-       print $stream $stone;
-   }
-   
-   
-   sub pick_primers {
-      # do something interesting...
-   }
-
-=head1 DESCRIPTION
-
-Please see the L<Boulder> manual page for full details.
-
-=head1 AUTHOR
-
-Lincoln D. Stein <lstein@cshl.org>, Cold Spring Harbor Laboratory,
-Cold Spring Harbor, NY.  This module can be used and distributed on
-the same terms as Perl itself.
-
-=head1 SEE ALSO
-
-L<Boulder>, L<Boulder::Stream>,
 L<Boulder::Blast>, L<Boulder::Genbank>, L<Boulder::Medline>, L<Boulder::Unigene>,
 L<Boulder::Omim>, L<Boulder::SwissProt>
 
