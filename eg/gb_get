@@ -1,14 +1,15 @@
-#!/usr/local/bin/perl
+#!/lab/bin/perl
 
 use strict 'vars';
+use lib '..','../blib/lib','.','./blib/lib';
 use Boulder::Stream;
 use Boulder::Genbank;
 use Getopt::Long;
 use Text::Abbrev;
-my ($ACCESSOR,$DELAY,$FIRST,$FLAT);
+my ($ACCESSOR,$DELAY,$FIRST,$BOULDER);
 
 GetOptions('accessor=s' => \$ACCESSOR,
-	   'flat'        =>\$FLAT,
+	   'boulder'     =>\$BOULDER,
 	   'delay=i'     => \$DELAY) || die <<USAGE;
 Usage: $0 [options] [accession] [accession] ...
 
@@ -17,14 +18,14 @@ numbers.  If no accession numbers are present on the
 command line, or if the magic "-" argument is given,
 will read accession numbers from standard in.
 
-Outputs a series of Boulder records for each accession
+Outputs a series of Genbank records for each accession
 number.
 
 Options:
   -accessor <Entrez|Yank>  Use the Entrez|Yank methods
                             for retrieving records.
-  -flag                    Return flatfile record
-  -delay    <seconds>      Seconds to sleep between retrievals (10)
+  -boulder                  Return boulder format file
+  -delay    <seconds>       Seconds to sleep between retrievals (10)
 
 Options may be abbreviated, i.e. -acc E
 USAGE
@@ -64,7 +65,7 @@ while (1) {
   last if $count++ > @accession_numbers;
   next unless my $s = $gb->get;
   sleep $DELAY if $FIRST++ && $DELAY > 0;
-  if ($FLAT) {
+  unless ($BOULDER) {
     print $s->Blob,"||\n";
   } else {
     $stream->put($s);

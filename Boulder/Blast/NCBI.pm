@@ -38,7 +38,7 @@ use Carp;
 use vars qw($VERSION @ISA);
 @ISA = 'Boulder::Blast';
 
-$VERSION = 1.01;
+$VERSION = 1.02;
 
 sub _read_record {
   my $self = shift;
@@ -143,7 +143,7 @@ sub parse_hits {
 
     $done    = /^\s+Database/; # here's how we get out of the loop
     $new_hit = /^>(\S+)/;
-    $new_hsp = $accession && /Score\s+=\s+([\d.]+)\s+bits\s+\((\S+)\)/;
+    $new_hsp = $accession && /Score\s+=\s+([\d.e+]+)\s+bits\s+\((\S+)\)/;
 
     # hit a new HSP section
     if ( $done || $new_hit || $new_hsp ) {

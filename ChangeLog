@@ -1,3 +1,10 @@
+2001-12-28  Lincoln Stein <lstein@cshl.org>
+	* (version 1.25)
+	* fixed GB_Stone bugs that prevented parsing of some of the feature fields
+	* fixed Boulder/Genbank bugs that prevented parsing of some newer genbank
+	entries that use the ORIGIN field.
+	* fixed problems parsing genomic entries that contain gaps.
+	
 2001-06-14  Lincoln Stein  <lstein@cshl.org>
 	* (version 1.24)
 	* Fixed bugs introduced into 1.23 version when parsing

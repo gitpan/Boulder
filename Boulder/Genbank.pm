@@ -7,7 +7,7 @@ use Carp;
 use vars qw(@ISA $VERSION);
 @ISA = qw(Boulder::Stream);
 
-$VERSION = 1.07;
+$VERSION = 1.08;
 
 # Hard-coded defaults - must modify for your site
 use constant YANK            =>  '/usr/local/bin/yank';
@@ -1001,7 +1001,7 @@ use IO::Socket;
 
 use constant PROTO => 'HTTP/1.0';
 use constant CRLF  => "\r\n";
-use constant MAX_ENTRIES => 19_000;
+use constant MAX_ENTRIES => 10_000;
 
 @ISA=qw(GenbankAccessor);
 
@@ -1044,7 +1044,7 @@ sub fetch_next {
       if (my $data = $self->_getline) {
 	$self->_cleanup(\$data);
 	return $data;
-      } else {
+      } elsif (!$self->{accession} || @{$self->{accession}} == 0) {  # nothing more to do
 	return;
       }
     }
