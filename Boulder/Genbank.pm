@@ -7,14 +7,16 @@ use Carp;
 use vars qw(@ISA $VERSION);
 @ISA = qw(Boulder::Stream);
 
-$VERSION = 1.08;
+$VERSION = 1.09;
 
 # Hard-coded defaults - must modify for your site
 use constant YANK            =>  '/usr/local/bin/yank';
 
 # used by Entrez accessor, may need to change in the future
 use constant HOST      => 'www.ncbi.nlm.nih.gov';
-use constant BATCH_URI => '/cgi-bin/Entrez/qserver.cgi/result';
+#use constant BATCH_URI => '/cgi-bin/Entrez/qserver.cgi/result';
+#use constant BATCH_URI => '/htbin-post/Entrez/query';
+use constant BATCH_URI => '/IEB/ToolBox/XML/xbatch.cgi';
 
 # Genbank entry parsing constants
 # (may need to adjust!)
@@ -84,6 +86,16 @@ Genbank-format records.  It returns Genbank entries in L<Stone>
 format, allowing easy access to the various fields and values.
 Boulder::Genbank is a descendent of Boulder::Stream, and provides a
 stream-like interface to a series of Stone objects.
+
+>> IMPORTANT NOTE <<
+
+As of January 2002, NCBI has changed their Batch Entrez interface.  I
+have modified Boulder::Genbank so as to use a "demo" interface, but
+although fetch by accession now works, fetch by Entrez query doesn't.
+
+I have written to NCBI, and they may fix this -- or they may not.
+
+>> IMPORTANT NOTE <<
 
 Access to Genbank is provided by three different I<accessors>, which
 together give access to remote and local Genbank databases.  When you
@@ -167,6 +179,8 @@ new() takes the following arguments:
 
 	-accessor	Name of the accessor to use
 	-fetch		Parameters to pass to the accessor
+        -proxy          Path to an HTTP proxy, used when using
+                         the Entrez accessor over a firewall.
 
 Specify the accessor to use with the B<-accessor> argument.  If not
 specified, it defaults to B<Entrez>. 
@@ -252,13 +266,22 @@ selected from the following list:
   t  3-D structure
   c  Genome
 
+=item B<-proxy>
+
+An HTTP proxy to use.  For example:
+
+   -proxy => http://www.firewall.com:9000
+
+If you think you need this, get the correct URL from your system
+administrator.
+
 =back
 
 As an example, here's how to search for ESTs from Oryza sativa that
-have been entered or modified since January 12, 1999.
+have been entered or modified since 1999.
 
   my $gb = new Boulder::Genbank( -accessor=>Entrez, 
-				 -query=>'Oryza sativa[Organism] AND EST[Keyword] AND 1999/01/12[Modification date]', 
+				 -query=>'Oryza sativa[Organism] AND EST[Keyword] AND 1999[MDAT]', 
                                  -db   => 'n'   
                                 });
 
@@ -700,8 +723,8 @@ sub new {
 
     if ($parameters[0]=~/^-/) {
 	%parameters = @parameters;
-	$self->{accessor}=$parameters{'-accessor'} || 'Entrez';
-	$self->{OUT}=$parameters{'-out'} || \*STDOUT;
+	$self->{accessor}  = $parameters{'-accessor'} || 'Entrez';
+	$self->{OUT}       = $parameters{'-out'} || \*STDOUT;
 	$self->{format}    = $parameters{'-format'};
     } else {
 	$self->{accessor}='Entrez';
@@ -1015,8 +1038,10 @@ sub new {
     $self->{accession} = $param->{-fetch} || $param->{-param};
     $self->{db}        = $param->{-db} || 'n';
     $self->{format}    = $param->{-format} || 'stone';
+    $self->{proxy}     = $param->{-proxy};
 
     croak "Must provide a 'query' or 'accession' argument" unless $self->{query} || $self->{accession} ;
+    $self->{accession} = [$self->{accession}] if $self->{accession} and !ref($self->{accession});
     $self->{accession} = [ @{$self->{accession}} ]
       if $self->{accession} and ref $self->{accession}; # copy array to avoid munging caller's variable
     return bless $self,$package;
@@ -1071,9 +1096,22 @@ sub _cleanup {
 sub _request {
   my $self = shift;
   my $format = $self->{format};
+  my ($path,$hostent,$peer,$peerport);
+
+  if (my $proxy = $self->{proxy}) {
+    ($hostent) = $proxy =~ m!^http://([^/]+)/?! or return;
+    $path = 'http://'.Boulder::Genbank::HOST.Boulder::Genbank::BATCH_URI;
+  } else {
+    $hostent = Boulder::Genbank::HOST;
+    $path = Boulder::Genbank::BATCH_URI;
+  }
+
+  ($peer,$peerport) = split(':',$hostent);
+  $peerport ||= 'http(80)';
+
   my $sock = IO::Socket::INET->new(
-				   PeerAddr => Boulder::Genbank::HOST,
-				   PeerPort => 'http(80)',
+				   PeerAddr => $peer,
+				   PeerPort => $peerport,
 				   Proto    => 'tcp'
 				  );
   return unless $sock;
@@ -1089,7 +1127,8 @@ sub _request {
 		'LIST_ORG'     => '(None)',
 		'QUERY'        => "$self->{query}\r\n",
 		'SAVETO'       => 'YES',
-		'NOHEADER'     => 'YES');
+		'NOHEADER'     => 'YES',
+	       );
 
   my @records = map {qq(Content-Disposition: form-data; name="$_"\r\n\r\n$canned{$_}\r\n)} keys %canned;
 
@@ -1102,8 +1141,8 @@ sub _request {
   }
 
   my $content = "$boundary\r\n" . join("$boundary\r\n",@records) . "$boundary--\r\n";
-  
-  print $sock "POST ",Boulder::Genbank::BATCH_URI," ",PROTO,CRLF;
+
+  print $sock "POST $path ",PROTO,CRLF;
   print $sock "User-agent: Mozilla/5.0 [en] (PalmOS)",CRLF;
   print $sock "Content-Type: multipart/form-data; boundary=$boundary",CRLF;
   print $sock "Content-Length: ",length $content,CRLF,CRLF;

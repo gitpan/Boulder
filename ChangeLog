@@ -1,3 +1,7 @@
+Thu Jan 24 14:21:02 EST 2002
+	* (Version 1.26)
+	* Partial fix for Entrez retrieval, but Entrez queries don't work :-(
+	
 2001-12-28  Lincoln Stein <lstein@cshl.org>
 	* (version 1.25)
 	* fixed GB_Stone bugs that prevented parsing of some of the feature fields
