@@ -1,4 +1,4 @@
-# $Id: Store.pm,v 1.5 2001/06/11 17:11:08 lstein Exp $
+# $Id: Store.pm,v 1.6 2002/06/28 20:31:59 lstein Exp $
 
 # Prototype support library for storing Boulder streams.
 # Basic design is as follows:
@@ -291,6 +291,7 @@ sub new {
 	'delim'=>'=',
 	'record_stop'=>"\n",
 	'line_end'=>'&',
+        'index_delim'=>' ',
 	'subrec_start'=>"\{",
 	'subrec_end'=>"\}"
 	},$package;
@@ -824,13 +825,13 @@ sub add_index {
     grep($oldindices{$_}++,$self->indexed_keys);
     my (@newindices) = grep(!$oldindices{$_},@indices);
     $self->reindex_some_keys(@newindices);
-    $self->{'index'}->{'.INDICES'}=join(" ",keys %oldindices,@newindices);
+    $self->{'index'}->{'.INDICES'}=join($self->{'index_delim'},keys %oldindices,@newindices);
 }
 
 # Return the indexed keys as an associative array (convenient)
 sub indexed_keys {
     my $self = shift;
-    return split(" ",$self->{'index'}->{'.INDICES'});
+    return split($self->{'index_delim'},$self->{'index'}->{'.INDICES'});
 }
 
 # Reindex all records that contain records involving the provided indices.

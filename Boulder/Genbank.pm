@@ -7,7 +7,7 @@ use Carp;
 use vars qw(@ISA $VERSION);
 @ISA = qw(Boulder::Stream);
 
-$VERSION = 1.09;
+$VERSION = 1.10;
 
 # Hard-coded defaults - must modify for your site
 use constant YANK            =>  '/usr/local/bin/yank';
@@ -844,7 +844,8 @@ sub parse {
     $key = $keyword if $keyword;
   }
   
-  my($sequence) = $record=~/\nORIGIN\s*\n(.+)\\?\\?/s;
+  my($sequence) = $record=~/\nORIGIN[^\n]*\n(.+)\\?\\?/s;
+
 #  $sequence=~s/[\s0-9-]+//g;  # remove white space and numbers
 #  $sequence =~ s/^\s*\d+\s//mg;  # remove leading numbers and whitespace
 #  $sequence =~ s/(\S{1,10}) /$1/g; # remove spacer
@@ -1011,7 +1012,8 @@ sub fetch_next {
     local($/)="//\n";
     my $line;
     my $fh = $self->{'fh'};
-    chomp($line = <$fh>);
+    $line = <$fh>;
+    chomp $line if $line;
     return $line;
 }
 
@@ -1256,7 +1258,7 @@ sub get_entries {
     $self->{accession} = \@accessions;
     return $self->get_entries; # horrible recursion here!
   } else {
-    while ($line =~ /(WARNING|ERROR): (.+)/) {
+    while ($line =~ /(\*\*\*\* |WARNING: |ERROR: )(.+)/) {
       warn "**** GENBANK $1: $2\n";
       $line = $sock->getline;
     }

@@ -1,3 +1,5 @@
+	* (version 1.28)
+	* Boulder::Store fixes from Aaron Wangberg
 Mon Feb  4 17:52:03 EST 2002
 	* (Version 1.27)
 	* Batch entrez queries work again using semi-published, semi-private interface

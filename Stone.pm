@@ -8,7 +8,7 @@ use vars qw($VERSION $AUTOLOAD $Fetchlast);
 use overload  '""' => 'toString',
 	      'fallback' =>' TRUE';
 
-$VERSION = '1.27';
+$VERSION = '1.29';
 require 5.004;
 
 =head1 NAME
