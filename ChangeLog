@@ -1,3 +1,11 @@
+
+2000-07-13  Lincoln Stein  <lstein@formaggio.cshl.org>
+
+	* (version 1.19)
+	* Fixed to_hash using patch from Alex Rolfe
+	* Fixed misdocumentation of Boulder::Store->put()
+		no longer requires record number
+
 2000-06-08  Lincoln Stein  <lstein@cshl.org>
 
 	* Fixed Boulder::Blast::NCBI parsing error that caused it to miss some HSPs

@@ -38,7 +38,7 @@ use Carp;
 use vars qw($VERSION @ISA);
 @ISA = 'Boulder::Blast';
 
-$VERSION = 1.00;
+$VERSION = 1.01;
 
 sub _read_record {
   my $self = shift;
@@ -230,7 +230,7 @@ sub parse_hits {
     $hsp->insert(Frame => $1)       if /Frame =\s+([^,]+)/;
 
     # process the query sequence
-    if (/^Query:\s+(\d+)\s+(\S+)\s+(\d+)/) {
+    if (/^Query:\s+(\d+)\s*(\S+)\s+(\d+)/) {
       $qstart ||= $1;
       $qend = $3;
       $query .= $2;
@@ -238,7 +238,7 @@ sub parse_hits {
     }
 
     # process the target sequence
-    if (/^Sbjct:\s+(\d+)\s+(\S+)\s+(\d+)/) {
+    if (/^Sbjct:\s+(\d+)\s*(\S+)\s+(\d+)/) {
       $tstart ||= $1;
       $tend     = $3;
       $target  .= $2;

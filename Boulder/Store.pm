@@ -1,4 +1,4 @@
-# $Id: Store.pm,v 1.2 1999/11/30 20:36:57 lstein Exp $
+# $Id: Store.pm,v 1.3 2000/10/20 00:09:56 lstein Exp $
 
 # Prototype support library for storing Boulder streams.
 # Basic design is as follows:
@@ -135,9 +135,11 @@ this call stores the stone at the indicated position, replacing whatever
 was there before.
 
 If no record number is provided, this call will look for the presence
-of a 'record_no' tag in the stone itself and put it back in that position.
-This allows you to pull a stone out of the database, modify it, and then
-put it back in without worrying about its record number.
+of a 'record_no' tag in the stone itself and put it back in that
+position.  This allows you to pull a stone out of the database, modify
+it, and then put it back in without worrying about its record number.
+If no record is found in the stone, then the effect is identical to
+write_record().
 
 The record number of the inserted stone is returned from this call, or
 -1 if an error occurred.
@@ -258,6 +260,8 @@ use Boulder::Stream;
 use Carp;
 use Fcntl;
 use DB_File;
+
+$VERSION = '1.19';
 
 @ISA = 'Boulder::Stream';
 $lockfh='lock00000';
@@ -432,11 +436,7 @@ sub write_record {
 sub put {
     my($self,$stone,$record_no) = @_;
     croak 'Usage: put($stone [,$record_no])' unless defined $stone;
-
-    croak "Record number not specified in Boulder::Store::put()"
-      unless defined($record_no) || defined($stone->get('record_no'));
-
-    $record_no = $stone->get('record_no') if $record_no eq '';
+    $record_no = $stone->get('record_no') unless defined($record_no);
     $self->write_record($stone,$record_no);
 }
 

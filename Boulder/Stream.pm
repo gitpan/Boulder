@@ -2,6 +2,9 @@ package Boulder::Stream;
 
 # CHANGE HISTORY:
 
+# version 1.07
+# patches from Andy Law to quash warnings under -w switch
+
 # changes from 1.04 to 1.05
 # - new() will now accept filehandle globs, IO::File, and FileHandle objects
 
@@ -285,7 +288,7 @@ use Carp;
 use Symbol();
 
 use vars '$VERSION';
-$VERSION=1.06;
+$VERSION=1.07;
 
 # Pseudonyms and deprecated methods.
 *get        =  \&read_record;
@@ -503,17 +506,18 @@ sub read_next_rec {
     $/="\n".$self->{record_stop};
     my($in) = $self->{IN};
 
-    my($data);
-    chomp($data = <$in>);
+    my $data = <$in>; 
+    chomp($data) if defined $data;
 
     if ($in !~ /ARGV/) {
-	$self->{EOF}++ if eof($in);
+        $self->{EOF}++ if eof($in);
     } else {
-	$self->{EOF}++ if eof();
+        $self->{EOF}++ if eof();
     }
 
     $/=$olddelim;
-    $self->{PAIRS}=[grep($_,split($self->{'line_end'},$data))];
+    $self->{PAIRS}=[grep($_,split($self->{'line_end'},$data))] 
+      if defined $data;
 }
 
 # This returns TRUE when we've reached the end
